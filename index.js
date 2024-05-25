@@ -96,7 +96,7 @@ async function updateAirtableRecord(recordId, output) {
 
 async function sendToGeminiAI(documentUrl) {
   try {
-    const response = await genAI.generate({
+    const response = await genAI.generateText({
       model: 'gemini-1.5-flash',
       prompt: documentUrl,
       temperature: generationConfig.temperature,
