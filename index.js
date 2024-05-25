@@ -1,6 +1,6 @@
 const express = require('express');
 const axios = require('axios');
-const FormData = require('form-data');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 app.use(express.json());
@@ -8,6 +8,9 @@ app.use(express.json());
 const apiKey = process.env.GEMINI_API_KEY;
 const airtableBaseId = process.env.AIRTABLE_BASE_ID;
 const airtableApiKey = process.env.AIRTABLE_API_KEY;
+
+const genAI = new GoogleGenerativeAI(apiKey);
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 const generationConfig = {
   temperature: 1,
@@ -94,27 +97,16 @@ async function updateAirtableRecord(recordId, output) {
 
 async function sendToGeminiAI(documentUrl) {
   try {
-    const response = await axios.post(
-      'https://gemini.googleapis.com/v1beta2/models/gemini-1.5-flash:generateText',
-      {
-        model: {
-          name: 'gemini-1.5-flash',
-          generation_config: generationConfig,
-          system_instruction: systemInstruction,
-          safety_settings: safetySettings,
-        },
-        user_input: documentUrl,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const response = await model.generateText({
+      input: documentUrl,
+      generationConfig,
+      systemInstruction,
+      safetySettings,
+    });
+
     return response.data.output;
   } catch (error) {
-    console.error('Error sending to Gemini AI:', error);
+    console.error('Error sending to Gemini AI:', error.response ? error.response.data : error.message);
     throw error;
   }
 }
