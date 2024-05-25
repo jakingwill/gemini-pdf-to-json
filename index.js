@@ -9,8 +9,7 @@ const apiKey = process.env.GEMINI_API_KEY;
 const airtableBaseId = process.env.AIRTABLE_BASE_ID;
 const airtableApiKey = process.env.AIRTABLE_API_KEY;
 
-const genAI = new GoogleGenerativeAI(apiKey);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const genAI = new GoogleGenerativeAI({ apiKey });
 
 const generationConfig = {
   temperature: 1,
@@ -97,11 +96,15 @@ async function updateAirtableRecord(recordId, output) {
 
 async function sendToGeminiAI(documentUrl) {
   try {
-    const response = await model.generateText({
-      input: documentUrl,
-      generationConfig,
-      systemInstruction,
-      safetySettings,
+    const response = await genAI.generate({
+      model: 'gemini-1.5-flash',
+      prompt: documentUrl,
+      temperature: generationConfig.temperature,
+      top_p: generationConfig.top_p,
+      top_k: generationConfig.top_k,
+      max_output_tokens: generationConfig.max_output_tokens,
+      safety_settings: safetySettings,
+      system_instruction: systemInstruction,
     });
 
     return response.data.output;
