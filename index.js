@@ -6,7 +6,10 @@ const FormData = require('form-data');
 const app = express();
 app.use(express.json());
 
-const apiKey = 'YOUR_API_KEY';
+const apiKey = process.env.GEMINI_API_KEY;
+const pdfExtractionApiEndpoint = process.env.PDF_EXTRACTION_API_ENDPOINT;
+const airtableBaseId = process.env.AIRTABLE_BASE_ID;
+const airtableApiKey = process.env.AIRTABLE_API_KEY;
 
 const generationConfig = {
   "temperature": 1,
@@ -59,7 +62,7 @@ async function extractPdfText(filePath) {
   const form = new FormData();
   form.append('file', fs.createReadStream(filePath));
 
-  const response = await axios.post('YOUR_PDF_EXTRACTION_API_ENDPOINT', form, {
+  const response = await axios.post(pdfExtractionApiEndpoint, form, {
     headers: {
       ...form.getHeaders(),
       'Authorization': `Bearer ${apiKey}`
@@ -110,9 +113,9 @@ app.post('/process-assessment', async (req, res) => {
 });
 
 async function fetchAirtableRecord(recordId) {
-  const response = await axios.get(`https://api.airtable.com/v0/YOUR_BASE_ID/Assessment%20converter/${recordId}`, {
+  const response = await axios.get(`https://api.airtable.com/v0/${airtableBaseId}/Assessment%20converter/${recordId}`, {
     headers: {
-      'Authorization': `Bearer YOUR_AIRTABLE_API_KEY`
+      'Authorization': `Bearer ${airtableApiKey}`
     }
   });
 
@@ -120,13 +123,13 @@ async function fetchAirtableRecord(recordId) {
 }
 
 async function updateAirtableRecord(recordId, output) {
-  const response = await axios.patch(`https://api.airtable.com/v0/YOUR_BASE_ID/Assessment%20converter/${recordId}`, {
+  const response = await axios.patch(`https://api.airtable.com/v0/${airtableBaseId}/Assessment%20converter/${recordId}`, {
     fields: {
       Output: JSON.stringify(output)
     }
   }, {
     headers: {
-      'Authorization': `Bearer YOUR_AIRTABLE_API_KEY`,
+      'Authorization': `Bearer ${airtableApiKey}`,
       'Content-Type': 'application/json'
     }
   });
