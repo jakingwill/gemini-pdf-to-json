@@ -60,51 +60,63 @@ Given an assessment, your task is to extract the text value of the following ent
 `;
 
 async function fetchAirtableRecord(recordId) {
-  const response = await axios.get(`https://api.airtable.com/v0/${airtableBaseId}/Assessment%20converter/${recordId}`, {
-    headers: {
-      Authorization: `Bearer ${airtableApiKey}`,
-    },
-  });
-
-  return response.data;
+  try {
+    const response = await axios.get(`https://api.airtable.com/v0/${airtableBaseId}/Assessment%20converter/${recordId}`, {
+      headers: {
+        Authorization: `Bearer ${airtableApiKey}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching Airtable record:', error);
+    throw error;
+  }
 }
 
 async function updateAirtableRecord(recordId, output) {
-  const response = await axios.patch(`https://api.airtable.com/v0/${airtableBaseId}/Assessment%20converter/${recordId}`, {
-    fields: {
-      Output: JSON.stringify(output),
-    },
-  }, {
-    headers: {
-      Authorization: `Bearer ${airtableApiKey}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  return response.data;
+  try {
+    const response = await axios.patch(`https://api.airtable.com/v0/${airtableBaseId}/Assessment%20converter/${recordId}`, {
+      fields: {
+        Output: JSON.stringify(output),
+      },
+    }, {
+      headers: {
+        Authorization: `Bearer ${airtableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating Airtable record:', error);
+    throw error;
+  }
 }
 
 async function sendToGeminiAI(documentUrl) {
-  const response = await axios.post(
-    'https://gemini.googleapis.com/v1beta2/models/gemini-1.5-flash:generateText',
-    {
-      model: {
-        name: 'gemini-1.5-flash',
-        generation_config: generationConfig,
-        system_instruction: systemInstruction,
-        safety_settings: safetySettings,
+  try {
+    const response = await axios.post(
+      'https://gemini.googleapis.com/v1beta2/models/gemini-1.5-flash:generateText',
+      {
+        model: {
+          name: 'gemini-1.5-flash',
+          generation_config: generationConfig,
+          system_instruction: systemInstruction,
+          safety_settings: safetySettings,
+        },
+        user_input: documentUrl,
       },
-      user_input: documentUrl,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
-
-  return response.data.output;
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    return response.data.output;
+  } catch (error) {
+    console.error('Error sending to Gemini AI:', error);
+    throw error;
+  }
 }
 
 app.post('/process-assessment', async (req, res) => {
@@ -115,8 +127,13 @@ app.post('/process-assessment', async (req, res) => {
     const record = await fetchAirtableRecord(recordId);
     const filePath = record.fields.Upload[0].url;
 
+    console.log('Fetched Airtable record:', record);
+    console.log('File path:', filePath);
+
     // Send the document URL to Gemini AI
     const output = await sendToGeminiAI(filePath);
+
+    console.log('Gemini AI output:', output);
 
     // Update the Airtable record with the output
     await updateAirtableRecord(recordId, output);
